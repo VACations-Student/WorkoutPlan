@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>PPL Workout Tracker — Push/Pull/Legs</title>
+    <meta name="description"
+        content="Push/Pull/Legs workout tracker (mobile-first). Local storage, edit weights/reps, log workouts and view history." />
+    <style>
+        :root {
+            --bg: #0f1724;
+            --card: #0b1220;
+            --muted: #9aa6b2;
+            --accent: #06b6d4;
+            --glass: rgba(255, 255, 255, 0.03);
+            --radius: 14px;
+            --pad: 14px;
+            --maxw: 980px;
+            --shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background: linear-gradient(180deg, #071025 0%, #07131b 60%);
+            color: #e6eef6;
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .app {
+            width: 100%;
+            max-width: var(--maxw);
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .logo {
+            width: 44px;
+            height: 44px;
+            background: var(--glass);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow)
+        }
+
+        .logo svg {
+            width: 26px;
+            height: 26px
+        }
+
+        h1 {
+            font-size: 16px;
+            margin: 0
+        }
+
+        p.lead {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px
+        }
+
+        nav {
+            display: flex;
+            gap: 8px;
+            overflow: auto;
+            padding-bottom: 8px;
+            margin-bottom: 12px
+        }
+
+        .tab {
+            flex: 0 0 auto;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 13px
+        }
+
+        .tab.active {
+            background: linear-gradient(90deg, rgba(6, 182, 212, 0.12), rgba(96, 165, 250, 0.05));
+            border-color: rgba(6, 182, 212, 0.18);
+            color: var(--accent)
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px
+        }
+
+        @media(min-width:860px) {
+            main {
+                grid-template-columns: 1fr 340px
+            }
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+            padding: var(--pad);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.03)
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px
+        }
+
+        .ex-list {
+            display: grid;
+            gap: 8px
+        }
+
+        .ex {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.01)
+        }
+
+        .ex .info {
+            flex: 1
+        }
+
+        .ex h3 {
+            margin: 0;
+            font-size: 15px
+        }
+
+        .meta {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 6px
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 8px 10px;
+            border-radius: 10px;
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 13px
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            color: #042a2e;
+            border: none
+        }
+
+        .btn.ghost {
+            background: transparent
+        }
+
+        .sets {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px
+        }
+
+        .set-pill {
+            padding: 6px 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            font-size: 13px
+        }
+
+        .smaller {
+            font-size: 13px;
+            color: var(--muted)
+        }
+
+        footer {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 13px;
+            text-align: center
+        }
+
+        /* modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px
+        }
+
+        .modal.show {
+            display: flex
+        }
+
+        .modal .dialog {
+            width: 100%;
+            max-width: 720px
+        }
+
+        input[type="number"],
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            color: inherit
+        }
+
+        .row {
+            display: flex;
+            gap: 8px
+        }
+
+        .row .col {
+            flex: 1
+        }
+
+        .history-list {
+            max-height: 300px;
+            overflow: auto;
+            padding-right: 6px
+        }
+
+        .history-item {
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.01);
+            margin-bottom: 8px
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: auto
+        }
+
+        /* micro animations */
+        .btn:active {
+            transform: translateY(1px)
+        }
+
+        .small-muted {
+            font-size: 12px;
+            color: var(--muted)
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <header>
+            <div class="brand">
+                <div class="logo" aria-hidden>
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 12h18" stroke="white" stroke-opacity="0.85" stroke-width="1.6"
+                            stroke-linecap="round" />
+                        <path d="M12 3v18" stroke="white" stroke-opacity="0.85" stroke-width="1.6"
+                            stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div>
+                    <h1>PPL Workout Tracker</h1>
+                    <p class="lead">5-day Push / Pull / Legs — mobile-first. Local only.</p>
+                </div>
+            </div>
+            <div class="top-actions">
+                <button class="btn" id="exportBtn">Export JSON</button>
+                <button class="btn" id="importBtn">Import</button>
+            </div>
+        </header>
+
+        <nav id="dayTabs" class="card">
+            <!-- tabs injected -->
+        </nav>
+
+        <main>
+            <section class="card" id="dayCard">
+                <div class="section-title">
+                    <strong id="dayTitle">Day</strong>
+                    <div class="smaller">Tap exercise to edit • Swipe tabs for days</div>
+                </div>
+                <div class="ex-list" id="exList">
+                    <!-- exercises injected -->
+                </div>
+            </section>
+
+            <aside class="card" id="sideCard">
+                <div class="section-title"><strong>Workout Log</strong>
+                    <div class="small-muted">Track and review</div>
+                </div>
+                <div id="logSection">
+                    <div class="smaller">Select an exercise and press + to add a log entry.</div>
+                    <div style="height:12px"></div>
+                    <div style="display:flex;gap:8px"><button class="btn primary" id="addLogBtn">+ Add
+                            Log</button><button class="btn" id="clearLogs">Clear All</button></div>
+                    <hr style="border:none;height:8px;background:transparent">
+                    <div id="historyHolder" class="history-list"></div>
+                </div>
+            </aside>
+        </main>
+
+        <footer class="smaller">Data stored locally in your browser. You can export JSON to keep backups.</footer>
+
+        <!-- modal: edit exercise -->
+        <div class="modal" id="modal">
+            <div class="dialog card">
+                <div class="section-title"><strong id="modalTitle">Edit Exercise</strong>
+                    <div><button class="btn" id="closeModal">Close</button></div>
+                </div>
+                <div style="margin-top:8px">
+                    <label class="small-muted">Exercise name</label>
+                    <input id="exName" type="text">
+                </div>
+                <div style="margin-top:8px" class="row">
+                    <div class="col"><label class="small-muted">Default weight</label><input id="exWeight"
+                            type="number"></div>
+                    <div class="col"><label class="small-muted">Default reps</label><input id="exReps" type="number">
+                    </div>
+                </div>
+                <div style="margin-top:12px">
+                    <label class="small-muted">Notes (optional)</label>
+                    <textarea id="exNotes" rows="3"></textarea>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+                    <button class="btn" id="deleteEx">Delete</button>
+                    <button class="btn primary" id="saveEx">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- modal: add log -->
+        <div class="modal" id="logModal">
+            <div class="dialog card">
+                <div class="section-title"><strong id="logModalTitle">Add Log</strong>
+                    <div><button class="btn" id="closeLogModal">Close</button></div>
+                </div>
+                <div style="margin-top:8px">
+                    <div class="small-muted">Exercise</div>
+                    <div id="logExName" style="font-weight:700;margin-bottom:6px"></div>
+                    <div class="row">
+                        <div class="col"><label class="small-muted">Date</label><input id="logDate" type="text"></div>
+                        <div class="col"><label class="small-muted">Sets completed</label><input id="logSets"
+                                type="number" min="1" value="3"></div>
+                    </div>
+                    <div style="margin-top:8px" class="row">
+                        <div class="col"><label class="small-muted">Weight</label><input id="logWeight" type="number">
+                        </div>
+                        <div class="col"><label class="small-muted">Reps (per set)</label><input id="logReps"
+                                type="text" placeholder="e.g. 6-6-5"></div>
+                    </div>
+                    <div style="margin-top:8px"><label class="small-muted">Notes</label><input id="logNotes"
+                            type="text"></div>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+                    <button class="btn" id="cancelLog">Cancel</button>
+                    <button class="btn primary" id="saveLog">Save Log</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Data model: default template (your split & exercises) ---
+        const DEFAULT = {
+            days: [
+                {
+                    id: 'pushA', title: 'Push A (Heavy)', exercises: [
+                        { id: 'bench', name: 'Bench press', weight: 80, reps: '5x4-6', notes: 'Strength focus' },
+                        { id: 'incline', name: 'Incline press', weight: 60, reps: '3x6-8' },
+                        { id: 'ohp', name: 'Dumbbell overhead press', weight: 20, reps: '3x6-8' },
+                        { id: 'pushdown', name: 'Triceps pushdown', weight: 60, reps: '3x8-12' },
+                        { id: 'dips', name: 'Dips (BW)', weight: 0, reps: '3x6-10' }
+                    ]
+                },
+                {
+                    id: 'pullA', title: 'Pull A (Heavy)', exercises: [
+                        { id: 'pulldown', name: 'Lat pulldown', weight: 90, reps: '5x4-6', notes: 'Straps ok on top sets' },
+                        { id: 'trow', name: 'T-Bar row', weight: 50, reps: '4x6-8' },
+                        { id: 'crosslat', name: 'Cross-body lat pull', weight: 70, reps: '3x8-10' },
+                        { id: 'dbpreach', name: 'Dumbbell preacher curl', weight: 12.5, reps: '3x8-10' }
+                    ]
+                },
+                {
+                    id: 'legs', title: 'Legs + Shoulders', exercises: [
+                        { id: 'trap', name: 'Trap-bar / RDL (tech)', weight: 0, reps: '3x5 / 3x6-8', notes: 'Use for deadlift progress' },
+                        { id: 'smithsq', name: 'Smith machine squat', weight: 40, reps: '4x8-10' },
+                        { id: 'seatedcurl', name: 'Seated leg curl', weight: 50, reps: '3x8-12' },
+                        { id: 'legext', name: 'Leg extension', weight: 70, reps: '3x10-15' },
+                        { id: 'calf', name: 'Smith calf raises', weight: 60, reps: '4x8-15' },
+                        { id: 'lateral', name: 'Lean-in cable lateral raise', weight: 15, reps: '4x10-12' },
+                        { id: 'rear', name: 'Reverse pec deck (rear delt)', weight: 40, reps: '3x10-12' }
+                    ]
+                },
+                {
+                    id: 'pushB', title: 'Push B (Volume)', exercises: [
+                        { id: 'bench2', name: 'Bench press (volume)', weight: 72, reps: '3x8-10' },
+                        { id: 'butterfly', name: 'Butterfly / Pec-deck', weight: 50, reps: '3x10-12' },
+                        { id: 'cablepress', name: 'Cable press', weight: 30, reps: '3x12' },
+                        { id: 'oh_ext', name: 'Overhead extension', weight: 60, reps: '3x8-12' }
+                    ]
+                },
+                {
+                    id: 'pullB', title: 'Pull B (Volume)', exercises: [
+                        { id: 'pulldown2', name: 'Lat pulldown (vol)', weight: 75, reps: '4x8-12' },
+                        { id: 'row2', name: 'Row (volume)', weight: 40, reps: '3x8-12' },
+                        { id: 'cross2', name: 'Cross-body lat pull', weight: 70, reps: '2x8-10' },
+                        { id: 'facebay', name: 'Face-away Bayesian cable curl', weight: 30, reps: '2x6-8 / 2x10', notes: 'First sets heavier' },
+                        { id: 'hammer', name: 'Preacher hammer curl (DB)', weight: 12.5, reps: '2x10-12' }
+                    ]
+                }
+            ]
+        };
+
+        const STORAGE_KEY = 'ppl-workout-v1';
+        const LOG_KEY = 'ppl-logs-v1';
+
+        // load or init
+        let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || DEFAULT;
+        let logs = JSON.parse(localStorage.getItem(LOG_KEY) || 'null') || [];
+        let currentDayIndex = 0;
+        let selectedExercise = null;
+
+        // DOM refs
+        const dayTabs = document.getElementById('dayTabs');
+        const exList = document.getElementById('exList');
+        const dayTitle = document.getElementById('dayTitle');
+        const modal = document.getElementById('modal');
+        const logModal = document.getElementById('logModal');
+        const historyHolder = document.getElementById('historyHolder');
+
+        // Build tabs
+        function renderTabs() {
+            dayTabs.innerHTML = '';
+            data.days.forEach((d, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'tab' + (i === currentDayIndex ? ' active' : '');
+                btn.textContent = d.title;
+                btn.onclick = () => { currentDayIndex = i; saveState(); render(); }
+                dayTabs.appendChild(btn);
+            })
+        }
+
+        // Render exercises for day
+        function render() {
+            renderTabs();
+            const day = data.days[currentDayIndex];
+            dayTitle.textContent = day.title;
+            exList.innerHTML = '';
+            day.exercises.forEach(ex => {
+                const card = document.createElement('div'); card.className = 'ex';
+                const info = document.createElement('div'); info.className = 'info';
+                const h = document.createElement('h3'); h.textContent = ex.name; info.appendChild(h);
+                const meta = document.createElement('div'); meta.className = 'meta'; meta.innerHTML = `Default: <strong>${ex.weight || 'BW'}</strong> kg • ${ex.reps || ''}` + (ex.notes ? ' • ' + ex.notes : '');
+                info.appendChild(meta);
+                card.appendChild(info);
+
+                const controls = document.createElement('div'); controls.className = 'controls';
+                const histBtn = document.createElement('button'); histBtn.className = 'btn'; histBtn.textContent = 'History';
+                histBtn.onclick = () => { openHistory(ex.id); }
+                const editBtn = document.createElement('button'); editBtn.className = 'btn'; editBtn.textContent = 'Edit';
+                editBtn.onclick = () => { openEditModal(ex); }
+                const addBtn = document.createElement('button'); addBtn.className = 'btn primary'; addBtn.textContent = '+ Log';
+                addBtn.onclick = () => { openAddLog(ex); }
+
+                controls.appendChild(histBtn); controls.appendChild(editBtn); controls.appendChild(addBtn);
+                card.appendChild(controls);
+                exList.appendChild(card);
+            })
+            renderHistoryList();
+            saveState();
+        }
+
+        function openEditModal(ex) {
+            selectedExercise = ex;
+            document.getElementById('modalTitle').textContent = 'Edit: ' + ex.name;
+            document.getElementById('exName').value = ex.name;
+            document.getElementById('exWeight').value = ex.weight || '';
+            document.getElementById('exReps').value = ex.reps || '';
+            document.getElementById('exNotes').value = ex.notes || '';
+            modal.classList.add('show');
+        }
+
+        function openAddLog(ex) {
+            selectedExercise = ex;
+            document.getElementById('logExName').textContent = ex.name;
+            document.getElementById('logDate').value = new Date().toLocaleDateString();
+            document.getElementById('logSets').value = 3;
+            document.getElementById('logWeight').value = ex.weight || '';
+            document.getElementById('logReps').value = '';
+            document.getElementById('logNotes').value = '';
+            logModal.classList.add('show');
+        }
+
+        // history view for specific exercise id
+        function openHistory(exId) {
+            selectedExercise = findExerciseById(exId);
+            renderHistoryList(exId);
+        }
+
+        // find helper
+        function findExerciseById(id) {
+            for (const d of data.days) for (const e of d.exercises) if (e.id === id) return e;
+            return null;
+        }
+
+        // save edit
+        document.getElementById('saveEx').addEventListener('click', () => {
+            if (!selectedExercise) return;
+            selectedExercise.name = document.getElementById('exName').value || selectedExercise.name;
+            selectedExercise.weight = Number(document.getElementById('exWeight').value) || 0;
+            selectedExercise.reps = document.getElementById('exReps').value || '';
+            selectedExercise.notes = document.getElementById('exNotes').value || '';
+            modal.classList.remove('show');
+            saveState(); render();
+        });
+
+        document.getElementById('closeModal').addEventListener('click', () => { modal.classList.remove('show'); });
+        document.getElementById('deleteEx').addEventListener('click', () => {
+            if (!selectedExercise) return; if (!confirm('Delete exercise? This will remove it from the day.')) return;
+            // find and remove
+            data.days.forEach(d => d.exercises = d.exercises.filter(e => e.id !== selectedExercise.id));
+            selectedExercise = null; modal.classList.remove('show'); saveState(); render();
+        });
+
+        // logs handling
+        document.getElementById('saveLog').addEventListener('click', () => {
+            const ex = selectedExercise; if (!ex) return;
+            const date = document.getElementById('logDate').value || new Date().toLocaleDateString();
+            const sets = Number(document.getElementById('logSets').value) || 0;
+            const weight = Number(document.getElementById('logWeight').value) || 0;
+            const reps = document.getElementById('logReps').value || '';
+            const notes = document.getElementById('logNotes').value || '';
+            const entry = { id: 'log_' + Date.now(), exId: ex.id, exName: ex.name, date, sets, weight, reps, notes };
+            logs.unshift(entry); // newest first
+            localStorage.setItem(LOG_KEY, JSON.stringify(logs));
+            logModal.classList.remove('show'); renderHistoryList();
+        });
+        document.getElementById('cancelLog').addEventListener('click', () => { logModal.classList.remove('show'); });
+        document.getElementById('closeLogModal').addEventListener('click', () => { logModal.classList.remove('show'); });
+
+        function renderHistoryList(filterExId) {
+            historyHolder.innerHTML = '';
+            const list = filterExId ? logs.filter(l => l.exId === filterExId) : logs;
+            if (list.length === 0) { historyHolder.innerHTML = '<div class="small-muted">No logs yet.</div>'; return; }
+            for (const l of list) {
+                const it = document.createElement('div'); it.className = 'history-item';
+                it.innerHTML = `<div style="display:flex;justify-content:space-between"><strong>${l.exName}</strong><span class="small-muted">${l.date}</span></div>
+        <div class="smaller">sets: ${l.sets} • weight: ${l.weight || 'BW'} kg • reps: ${l.reps || ''}</div>
+        <div class="small-muted">${l.notes || ''}</div>`;
+                historyHolder.appendChild(it);
+            }
+        }
+
+        // export/import
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const payload = { data, logs };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'ppl-workout-backup.json'; a.click(); URL.revokeObjectURL(url);
+        });
+        document.getElementById('importBtn').addEventListener('click', () => {
+            const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json';
+            inp.onchange = (e) => {
+                const f = e.target.files[0]; if (!f) return;
+                const reader = new FileReader(); reader.onload = () => {
+                    try {
+                        const parsed = JSON.parse(reader.result);
+                        if (parsed.data) data = parsed.data; if (parsed.logs) logs = parsed.logs;
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); localStorage.setItem(LOG_KEY, JSON.stringify(logs));
+                        alert('Imported.'); render();
+                    } catch (err) { alert('Invalid JSON'); }
+                }; reader.readAsText(f);
+            };
+            inp.click();
+        });
+
+        // clear logs
+        document.getElementById('clearLogs').addEventListener('click', () => {
+            if (!confirm('Clear all workout logs?')) return; logs = []; localStorage.removeItem(LOG_KEY); renderHistoryList();
+        });
+
+        // add log btn on side
+        document.getElementById('addLogBtn').addEventListener('click', () => {
+            // if an exercise was previously selected use that, else ask to pick the first exercise of current day
+            let ex = selectedExercise || data.days[currentDayIndex].exercises[0];
+            openAddLog(ex);
+        });
+
+        // save to localStorage
+        function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+        // init
+        render();
+
+        // small helper: keyboard escape to close modals
+        window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { modal.classList.remove('show'); logModal.classList.remove('show'); } });
+    </script>
+</body>
+
+</html>
