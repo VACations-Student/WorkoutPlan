@@ -18,12 +18,11 @@
             --pad: 14px;
             --maxw: 980px;
             --shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
-            --nav-height: 56px;
-            /* fallback, updated by JS */
+            --nav-gap: 12px;
         }
 
         * {
-            box-sizing: border-box
+            box-sizing: border-box;
         }
 
         html,
@@ -42,27 +41,28 @@
             justify-content: center;
             padding: 20px;
             overscroll-behavior-y: contain;
-            /* helps iOS nested scroll */
         }
 
-        /* ensure the content is pushed down so the fixed nav never overlaps */
+        /* .app is the page container — header + nav + main live inside.
+       Because nav is sticky (in-flow), it reserves space so nothing is overlapped. */
         .app {
             width: 100%;
             max-width: var(--maxw);
-            padding-top: calc(var(--nav-height) + 28px);
+            padding-top: 0;
+            /* no extra padding needed; nav reserves its own space */
         }
 
         header {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 14px
+            margin-bottom: 8px;
         }
 
         .brand {
             display: flex;
             align-items: center;
-            gap: 10px
+            gap: 10px;
         }
 
         .logo {
@@ -73,45 +73,58 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: var(--shadow)
+            box-shadow: var(--shadow);
         }
 
         .logo svg {
             width: 26px;
-            height: 26px
+            height: 26px;
         }
 
         h1 {
             font-size: 16px;
-            margin: 0
+            margin: 0;
         }
 
         p.lead {
             margin: 0;
             color: var(--muted);
-            font-size: 13px
+            font-size: 13px;
         }
 
-        /* FIXED top navbar (centered within app, full responsive width) */
+        /* NAVBAR: in-flow, sticky — occupies layout space, then sticks to viewport top when scrolled */
         nav {
-            position: fixed;
-            top: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 40px);
-            max-width: var(--maxw);
+            position: -webkit-sticky;
+            position: sticky;
+            top: 20px;
+            /* distance from viewport top when stuck; matches body padding */
+            left: 0;
             display: flex;
             gap: 8px;
             overflow-x: auto;
-            padding: 8px 12px;
-            margin: 0;
-            z-index: 1000;
-            /* above page content but below modals */
+            padding: 10px 12px;
+            margin: 8px 0 16px 0;
+            z-index: 900;
             border-radius: 12px;
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
             border: 1px solid rgba(255, 255, 255, 0.03);
             box-shadow: var(--shadow);
             -webkit-overflow-scrolling: touch;
+            flex-wrap: wrap;
+            /* allow two rows on narrow screens */
+            align-items: center;
+            justify-content: flex-start;
+            /* limit width visually to the app container */
+            width: calc(100% - 0px);
+            max-width: var(--maxw);
+        }
+
+        /* centralize nav inside page visually (we keep nav full-width of .app; .app is already centered) */
+        nav .nav-inner {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         .tab {
@@ -124,30 +137,32 @@
             font-weight: 600;
             font-size: 13px;
             white-space: nowrap;
+            margin-bottom: 6px;
         }
 
         .tab.active {
             background: linear-gradient(90deg, rgba(6, 182, 212, 0.12), rgba(96, 165, 250, 0.05));
             border-color: rgba(6, 182, 212, 0.18);
-            color: var(--accent)
+            color: var(--accent);
         }
 
         main {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 12px
+            gap: 12px;
         }
 
-        @media(min-width:860px) {
+        @media (min-width: 860px) {
             main {
-                grid-template-columns: 1fr 340px
+                grid-template-columns: 1fr 340px;
             }
         }
 
         /* tighter pills + smaller type on narrow phones (iPhone XR ~414px) */
         @media (max-width: 430px) {
             nav {
-                padding: 10px 10px;
+                padding: 8px 10px;
+                margin: 8px 0 12px 0;
             }
 
             .tab {
@@ -156,10 +171,9 @@
                 margin-bottom: 6px;
             }
 
-            /* slightly reduce header spacing so overall top spacing is still pleasant */
             header {
                 gap: 8px;
-                margin-bottom: 10px;
+                margin-bottom: 6px;
             }
         }
 
@@ -170,19 +184,18 @@
             box-shadow: var(--shadow);
             border: 1px solid rgba(255, 255, 255, 0.03);
             z-index: 1;
-            /* base stacking */
         }
 
         .section-title {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px
+            margin-bottom: 8px;
         }
 
         .ex-list {
             display: grid;
-            gap: 8px
+            gap: 8px;
         }
 
         .ex {
@@ -191,28 +204,28 @@
             align-items: center;
             padding: 10px;
             border-radius: 10px;
-            background: rgba(255, 255, 255, 0.01)
+            background: rgba(255, 255, 255, 0.01);
         }
 
         .ex .info {
-            flex: 1
+            flex: 1;
         }
 
         .ex h3 {
             margin: 0;
-            font-size: 15px
+            font-size: 15px;
         }
 
         .meta {
             color: var(--muted);
             font-size: 13px;
-            margin-top: 6px
+            margin-top: 6px;
         }
 
         .controls {
             display: flex;
             gap: 8px;
-            align-items: center
+            align-items: center;
         }
 
         .btn {
@@ -222,43 +235,39 @@
             border-radius: 10px;
             color: var(--muted);
             font-weight: 600;
-            font-size: 13px
+            font-size: 13px;
         }
 
         .btn.primary {
             background: var(--accent);
             color: #042a2e;
-            border: none
-        }
-
-        .btn.ghost {
-            background: transparent
+            border: none;
         }
 
         .sets {
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
-            margin-top: 8px
+            margin-top: 8px;
         }
 
         .set-pill {
             padding: 6px 8px;
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.02);
-            font-size: 13px
+            font-size: 13px;
         }
 
         .smaller {
             font-size: 13px;
-            color: var(--muted)
+            color: var(--muted);
         }
 
         footer {
             margin-top: 12px;
             color: var(--muted);
             font-size: 13px;
-            text-align: center
+            text-align: center;
         }
 
         /* modal (overlay fixes + stacking) */
@@ -270,12 +279,12 @@
             justify-content: center;
             padding: 20px;
             background: rgba(2, 6, 23, 0.55);
-            z-index: 100000;
+            z-index: 110000;
             -webkit-overflow-scrolling: touch;
         }
 
         .modal.show {
-            display: flex
+            display: flex;
         }
 
         .modal .dialog {
@@ -298,45 +307,45 @@
             border-radius: 10px;
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.04);
-            color: inherit
+            color: inherit;
         }
 
         .row {
             display: flex;
-            gap: 8px
+            gap: 8px;
         }
 
         .row .col {
-            flex: 1
+            flex: 1;
         }
 
         .history-list {
             max-height: 300px;
             overflow: auto;
-            padding-right: 6px
+            padding-right: 6px;
         }
 
         .history-item {
             padding: 8px;
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.01);
-            margin-bottom: 8px
+            margin-bottom: 8px;
         }
 
         .top-actions {
             display: flex;
             gap: 8px;
-            margin-left: auto
+            margin-left: auto;
         }
 
         /* micro animations */
         .btn:active {
-            transform: translateY(1px)
+            transform: translateY(1px);
         }
 
         .small-muted {
             font-size: 12px;
-            color: var(--muted)
+            color: var(--muted);
         }
 
         /* accessibility tweak for no-scroll state (iOS friendly) */
@@ -371,9 +380,9 @@
             </div>
         </header>
 
-        <!-- fixed navbar injected with tabs -->
+        <!-- NAV: sticky and in-flow (reserves space). Inner wrapper keeps layout tidy -->
         <nav id="dayTabs" class="card" aria-label="Days navigation">
-            <!-- tabs injected -->
+            <div class="nav-inner"></div>
         </nav>
 
         <main>
@@ -382,9 +391,7 @@
                     <strong id="dayTitle">Day</strong>
                     <div class="smaller">Tap exercise to edit • Swipe tabs for days</div>
                 </div>
-                <div class="ex-list" id="exList">
-                    <!-- exercises injected -->
-                </div>
+                <div class="ex-list" id="exList"><!-- exercises injected --></div>
             </section>
 
             <aside class="card" id="sideCard">
@@ -460,11 +467,10 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <script>
-        // --- Data model: default template (your split & exercises) ---
+        // --- Data model ---
         const DEFAULT = {
             days: [
                 {
@@ -518,62 +524,54 @@
         const STORAGE_KEY = 'ppl-workout-v1';
         const LOG_KEY = 'ppl-logs-v1';
 
-        // load or init
+        // state
         let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || DEFAULT;
         let logs = JSON.parse(localStorage.getItem(LOG_KEY) || 'null') || [];
         let currentDayIndex = 0;
         let selectedExercise = null;
         let _scrollY = 0;
 
-        // DOM refs
+        // refs
         const dayTabs = document.getElementById('dayTabs');
+        const navInner = dayTabs.querySelector('.nav-inner');
         const exList = document.getElementById('exList');
         const dayTitle = document.getElementById('dayTitle');
         const modal = document.getElementById('modal');
         const logModal = document.getElementById('logModal');
         const historyHolder = document.getElementById('historyHolder');
+        const headerEl = document.querySelector('header');
+        const appEl = document.querySelector('.app');
 
-        // --- helper: keep page content from being overlapped by fixed nav ---
-        // call this on init, on render, and on resize.
-        const navEl = document.getElementById('dayTabs');
-
-        function updateNavSizing() {
-            const h = navEl.offsetHeight || 56;
-            document.documentElement.style.setProperty('--nav-height', h + 'px');
-        }
-
-        // Build tabs (updated: sets current day, saves, renders and scrolls into view)
+        // build tabs (nav is in-flow and sticky so it reserves layout space)
         function renderTabs() {
-            dayTabs.innerHTML = '';
+            navInner.innerHTML = '';
             data.days.forEach((d, i) => {
                 const btn = document.createElement('button');
                 btn.className = 'tab' + (i === currentDayIndex ? ' active' : '');
                 btn.textContent = d.title;
-
                 btn.onclick = () => {
                     currentDayIndex = i;
                     saveState();
                     render();
 
-                    // smooth scroll: scroll app into view but account for the fixed nav height
+                    // scroll so the selected day's title is visible under the sticky nav
                     setTimeout(() => {
-                        const appEl = document.querySelector('.app');
-                        const rect = appEl.getBoundingClientRect();
-                        const appTop = window.scrollY + rect.top;
-                        const navHeight = navEl.offsetHeight || 56;
-                        const scrollTo = Math.max(0, appTop - navHeight - 12);
+                        const appRect = appEl.getBoundingClientRect();
+                        const appTop = window.scrollY + appRect.top;
+                        const navH = dayTabs.offsetHeight || 56;
+                        // If header is above the nav in flow, include its height too so we land correctly
+                        const headerH = headerEl ? headerEl.offsetHeight : 0;
+                        const scrollTo = Math.max(0, appTop - navH - headerH - 8);
                         window.scrollTo({ top: scrollTo, behavior: 'smooth' });
                     }, 40);
                 };
-
-                dayTabs.appendChild(btn);
+                navInner.appendChild(btn);
             });
-
-            // after tabs exist, refresh sizing to ensure padding matches measured nav height
-            updateNavSizing();
+            // small delay to ensure layout finished (useful if tabs wrap)
+            setTimeout(() => { /* no-op: nav is in-flow so it already reserves space */ }, 8);
         }
 
-        // Render exercises for day
+        // render exercises for day
         function render() {
             renderTabs();
             const day = data.days[currentDayIndex];
@@ -598,7 +596,7 @@
                 controls.appendChild(histBtn); controls.appendChild(editBtn); controls.appendChild(addBtn);
                 card.appendChild(controls);
                 exList.appendChild(card);
-            })
+            });
             renderHistoryList();
             saveState();
         }
@@ -642,7 +640,6 @@
             showModal(logModal);
         }
 
-        // history view for specific exercise id
         function openHistory(exId) {
             selectedExercise = findExerciseById(exId);
             renderHistoryList(exId);
@@ -650,7 +647,6 @@
             setTimeout(() => { historyHolder.scrollTop = 0; }, 40);
         }
 
-        // find helper
         function findExerciseById(id) {
             for (const d of data.days) for (const e of d.exercises) if (e.id === id) return e;
             return null;
@@ -733,7 +729,6 @@
 
         // add log btn on side
         document.getElementById('addLogBtn').addEventListener('click', () => {
-            // if an exercise was previously selected use that, else ask to pick the first exercise of current day
             let ex = selectedExercise || data.days[currentDayIndex].exercises[0];
             openAddLog(ex);
         });
@@ -743,16 +738,19 @@
 
         // init
         render();
-        updateNavSizing();
-
-        // keep sizing updated if user rotates / resizes
-        window.addEventListener('resize', () => {
-            clearTimeout(window._navSizeTimer);
-            window._navSizeTimer = setTimeout(updateNavSizing, 80);
-        });
 
         // small helper: keyboard escape to close modals
         window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { hideModal(modal); hideModal(logModal); } });
+
+        // recalc sizes on resize/rotation (tabs can wrap)
+        window.addEventListener('resize', () => {
+            clearTimeout(window._navSizeTimer);
+            window._navSizeTimer = setTimeout(() => {
+                // if tabs wrapped, no layout adjustments are needed because nav is in-flow,
+                // but scroll offsets need to account for the new nav height when jumping.
+                // nothing else required here.
+            }, 120);
+        });
     </script>
 </body>
 
