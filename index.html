@@ -29,6 +29,9 @@
             height: 100%
         }
 
+        /* Important: make room for iOS notch/status bar and avoid content sitting under the browser chrome
+           env(safe-area-inset-top) handles notches and top safe area. This prevents the tabs/header from being
+           covered/un-tappable on iPhones. */
         body {
             margin: 0;
             font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
@@ -38,9 +41,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 20px 20px 40px 20px;
             overscroll-behavior-y: contain;
             /* helps iOS nested scroll */
+            /* ensure a small safe top padding so content doesn't hide under the top UI in some browsers */
+            padding-top: calc(env(safe-area-inset-top, 20px) + 10px);
         }
 
         .app {
@@ -48,11 +53,17 @@
             max-width: var(--maxw);
         }
 
+        /* Make header sticky so tabs never scroll off-screen and won't be covered by page content */
         header {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 14px
+            margin-bottom: 14px;
+            position: sticky;
+            top: env(safe-area-inset-top, 0px);
+            z-index: 60;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
         }
 
         .brand {
@@ -88,12 +99,23 @@
             font-size: 13px
         }
 
+        /* Tabs row: ensure it sits below header and is horizontally scrollable on small screens */
         nav {
             display: flex;
             gap: 8px;
-            overflow: auto;
+            overflow-x: auto;
+            overflow-y: hidden;
             padding-bottom: 8px;
-            margin-bottom: 12px
+            margin-bottom: 12px;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
+            /* keep it on top of content so it's always tappable */
+            position: sticky;
+            top: calc(env(safe-area-inset-top, 0px) + 64px);
+            z-index: 55;
+            background: transparent;
+            padding-left: 6px;
+            padding-right: 6px;
         }
 
         .tab {
@@ -104,7 +126,8 @@
             border: 1px solid rgba(255, 255, 255, 0.04);
             color: var(--muted);
             font-weight: 600;
-            font-size: 13px
+            font-size: 13px;
+            scroll-snap-align: center;
         }
 
         .tab.active {
@@ -518,6 +541,11 @@
                 const h = document.createElement('h3'); h.textContent = ex.name; info.appendChild(h);
                 const meta = document.createElement('div'); meta.className = 'meta'; meta.innerHTML = `Default: <strong>${ex.weight || 'BW'}</strong> kg • ${ex.reps || ''}` + (ex.notes ? ' • ' + ex.notes : '');
                 info.appendChild(meta);
+
+                // attach a small invisible spacer to ensure the card is below the fixed/sticky tabs on very small viewports
+                const spacer = document.createElement('div'); spacer.style.height = '6px';
+                info.appendChild(spacer);
+
                 card.appendChild(info);
 
                 const controls = document.createElement('div'); controls.className = 'controls';
@@ -534,6 +562,12 @@
             })
             renderHistoryList();
             saveState();
+
+            // ensure the active tab is fully visible (scroll centered)
+            setTimeout(() => {
+                const active = dayTabs.querySelector('.tab.active');
+                if (active) active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }, 80);
         }
 
         // modal helpers: lock scroll (works on iOS too)
