@@ -18,6 +18,8 @@
             --pad: 14px;
             --maxw: 980px;
             --shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
+            --nav-height: 56px;
+            /* fallback, updated by JS */
         }
 
         * {
@@ -26,7 +28,7 @@
 
         html,
         body {
-            height: 100%
+            height: 100%;
         }
 
         body {
@@ -43,9 +45,11 @@
             /* helps iOS nested scroll */
         }
 
+        /* ensure the content is pushed down so the fixed nav never overlaps */
         .app {
             width: 100%;
             max-width: var(--maxw);
+            padding-top: calc(var(--nav-height) + 28px);
         }
 
         header {
@@ -88,23 +92,38 @@
             font-size: 13px
         }
 
+        /* FIXED top navbar (centered within app, full responsive width) */
         nav {
+            position: fixed;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 40px);
+            max-width: var(--maxw);
             display: flex;
             gap: 8px;
-            overflow: auto;
-            padding-bottom: 8px;
-            margin-bottom: 12px
+            overflow-x: auto;
+            padding: 8px 12px;
+            margin: 0;
+            z-index: 1000;
+            /* above page content but below modals */
+            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            box-shadow: var(--shadow);
+            -webkit-overflow-scrolling: touch;
         }
 
         .tab {
             flex: 0 0 auto;
-            padding: 8px 12px;
+            padding: 7px 10px;
             border-radius: 999px;
             background: transparent;
             border: 1px solid rgba(255, 255, 255, 0.04);
             color: var(--muted);
             font-weight: 600;
-            font-size: 13px
+            font-size: 13px;
+            white-space: nowrap;
         }
 
         .tab.active {
@@ -232,7 +251,7 @@
             justify-content: center;
             padding: 20px;
             background: rgba(2, 6, 23, 0.55);
-            z-index: 99999;
+            z-index: 100000;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -245,6 +264,10 @@
             max-width: 720px;
             position: relative;
             z-index: 100000;
+            max-height: calc(100vh - 48px);
+            overflow: auto;
+            margin: 12px;
+            border-radius: 12px;
         }
 
         input[type="number"],
@@ -329,7 +352,8 @@
             </div>
         </header>
 
-        <nav id="dayTabs" class="card">
+        <!-- fixed navbar injected with tabs -->
+        <nav id="dayTabs" class="card" aria-label="Days navigation">
             <!-- tabs injected -->
         </nav>
 
@@ -362,8 +386,8 @@
         <footer class="smaller">Data stored locally in your browser. You can export JSON to keep backups.</footer>
 
         <!-- modal: edit exercise -->
-        <div class="modal" id="modal">
-            <div class="dialog card">
+        <div class="modal" id="modal" aria-hidden="true">
+            <div class="dialog card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
                 <div class="section-title"><strong id="modalTitle">Edit Exercise</strong>
                     <div><button class="btn" id="closeModal">Close</button></div>
                 </div>
@@ -389,8 +413,8 @@
         </div>
 
         <!-- modal: add log -->
-        <div class="modal" id="logModal">
-            <div class="dialog card">
+        <div class="modal" id="logModal" aria-hidden="true">
+            <div class="dialog card" role="dialog" aria-modal="true" aria-labelledby="logModalTitle">
                 <div class="section-title"><strong id="logModalTitle">Add Log</strong>
                     <div><button class="btn" id="closeLogModal">Close</button></div>
                 </div>
@@ -490,20 +514,44 @@
         const logModal = document.getElementById('logModal');
         const historyHolder = document.getElementById('historyHolder');
 
-        // Build tabs
+        // --- helper: keep page content from being overlapped by fixed nav ---
+        // call this on init, on render, and on resize.
+        const navEl = document.getElementById('dayTabs');
+
+        function updateNavSizing() {
+            const h = navEl.offsetHeight || 56;
+            document.documentElement.style.setProperty('--nav-height', h + 'px');
+        }
+
+        // Build tabs (updated: sets current day, saves, renders and scrolls into view)
         function renderTabs() {
             dayTabs.innerHTML = '';
             data.days.forEach((d, i) => {
                 const btn = document.createElement('button');
                 btn.className = 'tab' + (i === currentDayIndex ? ' active' : '');
                 btn.textContent = d.title;
+
                 btn.onclick = () => {
-                    currentDayIndex = i; saveState(); render();
-                    // ensure viewport goes to top of the app on mobile
-                    setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 40);
-                }
+                    currentDayIndex = i;
+                    saveState();
+                    render();
+
+                    // smooth scroll: scroll app into view but account for the fixed nav height
+                    setTimeout(() => {
+                        const appEl = document.querySelector('.app');
+                        const rect = appEl.getBoundingClientRect();
+                        const appTop = window.scrollY + rect.top;
+                        const navHeight = navEl.offsetHeight || 56;
+                        const scrollTo = Math.max(0, appTop - navHeight - 12);
+                        window.scrollTo({ top: scrollTo, behavior: 'smooth' });
+                    }, 40);
+                };
+
                 dayTabs.appendChild(btn);
-            })
+            });
+
+            // after tabs exist, refresh sizing to ensure padding matches measured nav height
+            updateNavSizing();
         }
 
         // Render exercises for day
@@ -543,11 +591,13 @@
             document.body.style.top = `-${_scrollY}px`;
             document.body.classList.add('no-scroll-lock');
             el.classList.add('show');
+            el.setAttribute('aria-hidden', 'false');
         }
         function hideModal(el) {
             if (!el) return;
             el.classList.remove('show');
             document.body.classList.remove('no-scroll-lock');
+            el.setAttribute('aria-hidden', 'true');
             // restore scroll position
             setTimeout(() => { window.scrollTo(0, _scrollY); document.body.style.top = ''; }, 1);
         }
@@ -674,6 +724,13 @@
 
         // init
         render();
+        updateNavSizing();
+
+        // keep sizing updated if user rotates / resizes
+        window.addEventListener('resize', () => {
+            clearTimeout(window._navSizeTimer);
+            window._navSizeTimer = setTimeout(updateNavSizing, 80);
+        });
 
         // small helper: keyboard escape to close modals
         window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { hideModal(modal); hideModal(logModal); } });
