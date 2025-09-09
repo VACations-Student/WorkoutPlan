@@ -39,6 +39,8 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            overscroll-behavior-y: contain;
+            /* helps iOS nested scroll */
         }
 
         .app {
@@ -128,7 +130,9 @@
             padding: var(--pad);
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            border: 1px solid rgba(255, 255, 255, 0.03)
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            z-index: 1;
+            /* base stacking */
         }
 
         .section-title {
@@ -219,14 +223,17 @@
             text-align: center
         }
 
-        /* modal */
+        /* modal (overlay fixes + stacking) */
         .modal {
             position: fixed;
             inset: 0;
             display: none;
             align-items: center;
             justify-content: center;
-            padding: 20px
+            padding: 20px;
+            background: rgba(2, 6, 23, 0.55);
+            z-index: 99999;
+            -webkit-overflow-scrolling: touch;
         }
 
         .modal.show {
@@ -235,7 +242,9 @@
 
         .modal .dialog {
             width: 100%;
-            max-width: 720px
+            max-width: 720px;
+            position: relative;
+            z-index: 100000;
         }
 
         input[type="number"],
@@ -286,6 +295,13 @@
         .small-muted {
             font-size: 12px;
             color: var(--muted)
+        }
+
+        /* accessibility tweak for no-scroll state (iOS friendly) */
+        .no-scroll-lock {
+            position: fixed;
+            overflow: hidden;
+            width: 100%;
         }
     </style>
 </head>
@@ -464,6 +480,7 @@
         let logs = JSON.parse(localStorage.getItem(LOG_KEY) || 'null') || [];
         let currentDayIndex = 0;
         let selectedExercise = null;
+        let _scrollY = 0;
 
         // DOM refs
         const dayTabs = document.getElementById('dayTabs');
@@ -480,7 +497,11 @@
                 const btn = document.createElement('button');
                 btn.className = 'tab' + (i === currentDayIndex ? ' active' : '');
                 btn.textContent = d.title;
-                btn.onclick = () => { currentDayIndex = i; saveState(); render(); }
+                btn.onclick = () => {
+                    currentDayIndex = i; saveState(); render();
+                    // ensure viewport goes to top of the app on mobile
+                    setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 40);
+                }
                 dayTabs.appendChild(btn);
             })
         }
@@ -515,6 +536,22 @@
             saveState();
         }
 
+        // modal helpers: lock scroll (works on iOS too)
+        function showModal(el) {
+            if (!el) return;
+            _scrollY = window.scrollY || document.documentElement.scrollTop;
+            document.body.style.top = `-${_scrollY}px`;
+            document.body.classList.add('no-scroll-lock');
+            el.classList.add('show');
+        }
+        function hideModal(el) {
+            if (!el) return;
+            el.classList.remove('show');
+            document.body.classList.remove('no-scroll-lock');
+            // restore scroll position
+            setTimeout(() => { window.scrollTo(0, _scrollY); document.body.style.top = ''; }, 1);
+        }
+
         function openEditModal(ex) {
             selectedExercise = ex;
             document.getElementById('modalTitle').textContent = 'Edit: ' + ex.name;
@@ -522,7 +559,7 @@
             document.getElementById('exWeight').value = ex.weight || '';
             document.getElementById('exReps').value = ex.reps || '';
             document.getElementById('exNotes').value = ex.notes || '';
-            modal.classList.add('show');
+            showModal(modal);
         }
 
         function openAddLog(ex) {
@@ -533,13 +570,15 @@
             document.getElementById('logWeight').value = ex.weight || '';
             document.getElementById('logReps').value = '';
             document.getElementById('logNotes').value = '';
-            logModal.classList.add('show');
+            showModal(logModal);
         }
 
         // history view for specific exercise id
         function openHistory(exId) {
             selectedExercise = findExerciseById(exId);
             renderHistoryList(exId);
+            // scroll history into view
+            setTimeout(() => { historyHolder.scrollTop = 0; }, 40);
         }
 
         // find helper
@@ -555,16 +594,16 @@
             selectedExercise.weight = Number(document.getElementById('exWeight').value) || 0;
             selectedExercise.reps = document.getElementById('exReps').value || '';
             selectedExercise.notes = document.getElementById('exNotes').value || '';
-            modal.classList.remove('show');
+            hideModal(modal);
             saveState(); render();
         });
 
-        document.getElementById('closeModal').addEventListener('click', () => { modal.classList.remove('show'); });
+        document.getElementById('closeModal').addEventListener('click', () => { hideModal(modal); });
         document.getElementById('deleteEx').addEventListener('click', () => {
             if (!selectedExercise) return; if (!confirm('Delete exercise? This will remove it from the day.')) return;
             // find and remove
             data.days.forEach(d => d.exercises = d.exercises.filter(e => e.id !== selectedExercise.id));
-            selectedExercise = null; modal.classList.remove('show'); saveState(); render();
+            selectedExercise = null; hideModal(modal); saveState(); render();
         });
 
         // logs handling
@@ -578,10 +617,10 @@
             const entry = { id: 'log_' + Date.now(), exId: ex.id, exName: ex.name, date, sets, weight, reps, notes };
             logs.unshift(entry); // newest first
             localStorage.setItem(LOG_KEY, JSON.stringify(logs));
-            logModal.classList.remove('show'); renderHistoryList();
+            hideModal(logModal); renderHistoryList();
         });
-        document.getElementById('cancelLog').addEventListener('click', () => { logModal.classList.remove('show'); });
-        document.getElementById('closeLogModal').addEventListener('click', () => { logModal.classList.remove('show'); });
+        document.getElementById('cancelLog').addEventListener('click', () => { hideModal(logModal); });
+        document.getElementById('closeLogModal').addEventListener('click', () => { hideModal(logModal); });
 
         function renderHistoryList(filterExId) {
             historyHolder.innerHTML = '';
@@ -637,7 +676,7 @@
         render();
 
         // small helper: keyboard escape to close modals
-        window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { modal.classList.remove('show'); logModal.classList.remove('show'); } });
+        window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { hideModal(modal); hideModal(logModal); } });
     </script>
 </body>
 
