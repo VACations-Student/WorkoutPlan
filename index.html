@@ -144,6 +144,25 @@
             }
         }
 
+        /* tighter pills + smaller type on narrow phones (iPhone XR ~414px) */
+        @media (max-width: 430px) {
+            nav {
+                padding: 10px 10px;
+            }
+
+            .tab {
+                padding: 6px 8px;
+                font-size: 12px;
+                margin-bottom: 6px;
+            }
+
+            /* slightly reduce header spacing so overall top spacing is still pleasant */
+            header {
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+        }
+
         .card {
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
             padding: var(--pad);
@@ -519,8 +538,19 @@
         const navEl = document.getElementById('dayTabs');
 
         function updateNavSizing() {
-            const h = navEl.offsetHeight || 56;
-            document.documentElement.style.setProperty('--nav-height', h + 'px');
+            // measure nav and header: nav may wrap to multiple rows so height can vary
+            const navH = dayTabs.offsetHeight || 56;
+            const headerH = headerEl ? headerEl.offsetHeight : 0;
+
+            // larger breathing room for very narrow phones (e.g. iPhone XR)
+            let extraGap = 14;
+            if (window.innerWidth <= 430) {
+                extraGap = 28; // more padding to avoid overlap when nav wraps
+            }
+
+            // set CSS var and set the top padding on the body (so everything in .app sits below both header and nav)
+            document.documentElement.style.setProperty('--nav-height', navH + 'px');
+            document.body.style.paddingTop = (navH + headerH + extraGap) + 'px';
         }
 
         // Build tabs (updated: sets current day, saves, renders and scrolls into view)
