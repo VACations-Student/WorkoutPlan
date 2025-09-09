@@ -538,19 +538,8 @@
         const navEl = document.getElementById('dayTabs');
 
         function updateNavSizing() {
-            // measure nav and header: nav may wrap to multiple rows so height can vary
-            const navH = dayTabs.offsetHeight || 56;
-            const headerH = headerEl ? headerEl.offsetHeight : 0;
-
-            // larger breathing room for very narrow phones (e.g. iPhone XR)
-            let extraGap = 14;
-            if (window.innerWidth <= 430) {
-                extraGap = 28; // more padding to avoid overlap when nav wraps
-            }
-
-            // set CSS var and set the top padding on the body (so everything in .app sits below both header and nav)
-            document.documentElement.style.setProperty('--nav-height', navH + 'px');
-            document.body.style.paddingTop = (navH + headerH + extraGap) + 'px';
+            const h = navEl.offsetHeight || 56;
+            document.documentElement.style.setProperty('--nav-height', h + 'px');
         }
 
         // Build tabs (updated: sets current day, saves, renders and scrolls into view)
