@@ -35,24 +35,72 @@
             background: linear-gradient(180deg, #071025 0%, #07131b 60%);
             color: #e6eef6;
             -webkit-font-smoothing: antialiased;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
             padding: 20px;
             overscroll-behavior-y: contain;
         }
 
-        /* page container */
+        /* Fixed top navbar (always at top of viewport). We'll reserve space with #navSpacer. */
+        #dayTabs {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 10px);
+            /* safe area + margin */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1200;
+            display: flex;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            box-shadow: var(--shadow);
+            -webkit-overflow-scrolling: touch;
+            flex-wrap: wrap;
+            align-items: center;
+            width: calc(100% - 40px);
+            max-width: var(--maxw);
+            transition: top .12s ease;
+        }
+
+        /* spacer element in DOM to reserve nav height in the flow (so content not overlapped) */
+        #navSpacer {
+            height: 0;
+            width: 100%;
+        }
+
+        .tab {
+            flex: 0 0 auto;
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+            margin-bottom: 6px;
+        }
+
+        .tab.active {
+            background: linear-gradient(90deg, rgba(6, 182, 212, 0.12), rgba(96, 165, 250, 0.05));
+            border-color: rgba(6, 182, 212, 0.18);
+            color: var(--accent);
+        }
+
+        /* app container (centered) */
         .app {
             width: 100%;
             max-width: var(--maxw);
+            margin: 0 auto;
         }
 
         header {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 8px;
+            margin: 12px 0 8px 0;
         }
 
         .brand {
@@ -88,56 +136,6 @@
             font-size: 13px
         }
 
-        /* NAV - fixed but visually under the header */
-        #dayTabs {
-            position: fixed;
-            left: 50%;
-            transform: translateX(-50%);
-            /* top will be set from JS so nav appears below header (not glued to viewport top) */
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding: 10px 12px;
-            z-index: 1000;
-            border-radius: 12px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            box-shadow: var(--shadow);
-            -webkit-overflow-scrolling: touch;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: flex-start;
-            width: calc(100% - 40px);
-            max-width: var(--maxw);
-            transition: top 160ms ease;
-        }
-
-        /* spacer reserves the nav height in the document flow (so content is not overlapped) */
-        #navSpacer {
-            height: 0;
-            /* set by JS to match nav height */
-            width: 100%;
-        }
-
-        .tab {
-            flex: 0 0 auto;
-            padding: 7px 10px;
-            border-radius: 999px;
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            color: var(--muted);
-            font-weight: 600;
-            font-size: 13px;
-            white-space: nowrap;
-            margin-bottom: 6px;
-        }
-
-        .tab.active {
-            background: linear-gradient(90deg, rgba(6, 182, 212, 0.12), rgba(96, 165, 250, 0.05));
-            border-color: rgba(6, 182, 212, 0.18);
-            color: var(--accent);
-        }
-
         main {
             display: grid;
             grid-template-columns: 1fr;
@@ -153,7 +151,6 @@
         @media(max-width:430px) {
             #dayTabs {
                 padding: 8px 10px;
-                margin-bottom: 6px;
             }
 
             .tab {
@@ -164,7 +161,7 @@
 
             header {
                 gap: 8px;
-                margin-bottom: 6px
+                margin: 8px 0
             }
         }
 
@@ -269,7 +266,7 @@
             justify-content: center;
             padding: 20px;
             background: rgba(2, 6, 23, 0.55);
-            z-index: 110000;
+            z-index: 1300;
             -webkit-overflow-scrolling: touch
         }
 
@@ -346,6 +343,11 @@
 </head>
 
 <body>
+    <!-- NAV (fixed at viewport top) -->
+    <nav id="dayTabs" aria-label="Days navigation"><!-- tabs injected here --></nav>
+    <!-- Spacer reserves the top nav height so content below does not get overlapped -->
+    <div id="navSpacer"></div>
+
     <div class="app">
         <header>
             <div class="brand">
@@ -367,14 +369,6 @@
                 <button class="btn" id="importBtn">Import</button>
             </div>
         </header>
-
-        <!-- spacer reserves the nav height in the flow so content won't be overlapped -->
-        <div id="navSpacer"></div>
-
-        <!-- fixed navbar (positioned by JS under header) -->
-        <nav id="dayTabs" class="card" aria-label="Days navigation">
-            <div class="nav-inner"></div>
-        </nav>
 
         <main>
             <section class="card" id="dayCard">
@@ -401,59 +395,57 @@
         </main>
 
         <footer class="smaller">Data stored locally in your browser. You can export JSON to keep backups.</footer>
+    </div>
 
-        <!-- edit modal -->
-        <div class="modal" id="modal" aria-hidden="true">
-            <div class="dialog card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-                <div class="section-title"><strong id="modalTitle">Edit Exercise</strong>
-                    <div><button class="btn" id="closeModal">Close</button></div>
-                </div>
-                <div style="margin-top:8px"><label class="small-muted">Exercise name</label><input id="exName"
-                        type="text"></div>
-                <div style="margin-top:8px" class="row">
-                    <div class="col"><label class="small-muted">Default weight</label><input id="exWeight"
-                            type="number"></div>
-                    <div class="col"><label class="small-muted">Default reps</label><input id="exReps" type="number">
-                    </div>
-                </div>
-                <div style="margin-top:12px"><label class="small-muted">Notes (optional)</label><textarea id="exNotes"
-                        rows="3"></textarea></div>
-                <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button class="btn"
-                        id="deleteEx">Delete</button><button class="btn primary" id="saveEx">Save</button></div>
+    <!-- Edit modal -->
+    <div class="modal" id="modal" aria-hidden="true">
+        <div class="dialog card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="section-title"><strong id="modalTitle">Edit Exercise</strong>
+                <div><button class="btn" id="closeModal">Close</button></div>
             </div>
+            <div style="margin-top:8px"><label class="small-muted">Exercise name</label><input id="exName" type="text">
+            </div>
+            <div style="margin-top:8px" class="row">
+                <div class="col"><label class="small-muted">Default weight</label><input id="exWeight" type="number">
+                </div>
+                <div class="col"><label class="small-muted">Default reps</label><input id="exReps" type="number"></div>
+            </div>
+            <div style="margin-top:12px"><label class="small-muted">Notes (optional)</label><textarea id="exNotes"
+                    rows="3"></textarea></div>
+            <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button class="btn"
+                    id="deleteEx">Delete</button><button class="btn primary" id="saveEx">Save</button></div>
         </div>
+    </div>
 
-        <!-- log modal -->
-        <div class="modal" id="logModal" aria-hidden="true">
-            <div class="dialog card" role="dialog" aria-modal="true" aria-labelledby="logModalTitle">
-                <div class="section-title"><strong id="logModalTitle">Add Log</strong>
-                    <div><button class="btn" id="closeLogModal">Close</button></div>
-                </div>
-                <div style="margin-top:8px">
-                    <div class="small-muted">Exercise</div>
-                    <div id="logExName" style="font-weight:700;margin-bottom:6px"></div>
-                    <div class="row">
-                        <div class="col"><label class="small-muted">Date</label><input id="logDate" type="text"></div>
-                        <div class="col"><label class="small-muted">Sets completed</label><input id="logSets"
-                                type="number" min="1" value="3"></div>
-                    </div>
-                    <div style="margin-top:8px" class="row">
-                        <div class="col"><label class="small-muted">Weight</label><input id="logWeight" type="number">
-                        </div>
-                        <div class="col"><label class="small-muted">Reps (per set)</label><input id="logReps"
-                                type="text" placeholder="e.g. 6-6-5"></div>
-                    </div>
-                    <div style="margin-top:8px"><label class="small-muted">Notes</label><input id="logNotes"
-                            type="text"></div>
-                </div>
-                <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button class="btn"
-                        id="cancelLog">Cancel</button><button class="btn primary" id="saveLog">Save Log</button></div>
+    <!-- Add log modal -->
+    <div class="modal" id="logModal" aria-hidden="true">
+        <div class="dialog card" role="dialog" aria-modal="true" aria-labelledby="logModalTitle">
+            <div class="section-title"><strong id="logModalTitle">Add Log</strong>
+                <div><button class="btn" id="closeLogModal">Close</button></div>
             </div>
+            <div style="margin-top:8px">
+                <div class="small-muted">Exercise</div>
+                <div id="logExName" style="font-weight:700;margin-bottom:6px"></div>
+                <div class="row">
+                    <div class="col"><label class="small-muted">Date</label><input id="logDate" type="text"></div>
+                    <div class="col"><label class="small-muted">Sets completed</label><input id="logSets" type="number"
+                            min="1" value="3"></div>
+                </div>
+                <div style="margin-top:8px" class="row">
+                    <div class="col"><label class="small-muted">Weight</label><input id="logWeight" type="number"></div>
+                    <div class="col"><label class="small-muted">Reps (per set)</label><input id="logReps" type="text"
+                            placeholder="e.g. 6-6-5"></div>
+                </div>
+                <div style="margin-top:8px"><label class="small-muted">Notes</label><input id="logNotes" type="text">
+                </div>
+            </div>
+            <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button class="btn"
+                    id="cancelLog">Cancel</button><button class="btn primary" id="saveLog">Save Log</button></div>
         </div>
     </div>
 
     <script>
-        // Default data
+        // default data
         const DEFAULT = {
             days: [
                 {
@@ -462,8 +454,7 @@
                         { id: 'incline', name: 'Incline press', weight: 60, reps: '3x6-8' },
                         { id: 'ohp', name: 'Dumbbell overhead press', weight: 20, reps: '3x6-8' },
                         { id: 'pushdown', name: 'Triceps pushdown', weight: 60, reps: '3x8-12' },
-                        { id: 'dips', name: 'Dips (BW)', weight: 0, reps: '3x6-10' }
-                    ]
+                        { id: 'dips', name: 'Dips (BW)', weight: 0, reps: '3x6-10' }]
                 },
                 {
                     id: 'pullA', title: 'Pull A (Heavy)', exercises: [
@@ -515,31 +506,29 @@
 
         // DOM refs
         const dayTabs = document.getElementById('dayTabs');
-        const navInner = dayTabs.querySelector('.nav-inner');
         const navSpacer = document.getElementById('navSpacer');
+        const appEl = document.querySelector('.app');
         const exList = document.getElementById('exList');
         const dayTitle = document.getElementById('dayTitle');
         const modal = document.getElementById('modal');
         const logModal = document.getElementById('logModal');
         const historyHolder = document.getElementById('historyHolder');
         const headerEl = document.querySelector('header');
-        const appEl = document.querySelector('.app');
 
-        // Build tabs (navInner gets the buttons)
+        // render tabs into the fixed nav
         function renderTabs() {
-            navInner.innerHTML = '';
+            dayTabs.innerHTML = '';
             data.days.forEach((d, i) => {
-                const btn = document.createElement('button');
-                btn.className = 'tab' + (i === currentDayIndex ? ' active' : '');
-                btn.textContent = d.title;
-                btn.onclick = () => { currentDayIndex = i; saveState(); render(); scrollToApp(); };
-                navInner.appendChild(btn);
+                const b = document.createElement('button');
+                b.className = 'tab' + (i === currentDayIndex ? ' active' : '');
+                b.textContent = d.title;
+                b.onclick = () => { currentDayIndex = i; saveState(); render(); scrollToContent(); };
+                dayTabs.appendChild(b);
             });
-            // after tabs exist, update nav position/spacing because height may have changed (wrap -> 2 rows)
-            setTimeout(updateNavPlacement, 12);
+            // update spacer to match nav height (tabs may wrap -> height changes)
+            setTimeout(updateNavSpacer, 8);
         }
 
-        // Render exercises for the current day
         function render() {
             renderTabs();
             const day = data.days[currentDayIndex];
@@ -555,14 +544,10 @@
                 card.appendChild(info);
 
                 const controls = document.createElement('div'); controls.className = 'controls';
-                const histBtn = document.createElement('button'); histBtn.className = 'btn'; histBtn.textContent = 'History';
-                histBtn.onclick = () => { openHistory(ex.id); };
-                const editBtn = document.createElement('button'); editBtn.className = 'btn'; editBtn.textContent = 'Edit';
-                editBtn.onclick = () => { openEditModal(ex); };
-                const addBtn = document.createElement('button'); addBtn.className = 'btn primary'; addBtn.textContent = '+ Log';
-                addBtn.onclick = () => { openAddLog(ex); };
-
-                controls.appendChild(histBtn); controls.appendChild(editBtn); controls.appendChild(addBtn);
+                const hist = document.createElement('button'); hist.className = 'btn'; hist.textContent = 'History'; hist.onclick = () => openHistory(ex.id);
+                const edit = document.createElement('button'); edit.className = 'btn'; edit.textContent = 'Edit'; edit.onclick = () => openEditModal(ex);
+                const add = document.createElement('button'); add.className = 'btn primary'; add.textContent = '+ Log'; add.onclick = () => openAddLog(ex);
+                controls.appendChild(hist); controls.appendChild(edit); controls.appendChild(add);
                 card.appendChild(controls);
                 exList.appendChild(card);
             });
@@ -570,45 +555,27 @@
             saveState();
         }
 
-        // Update nav placement and spacer so fixed nav sits below header and reserves space
-        function updateNavPlacement() {
-            // measure header height (in-flow) and nav height (after layout)
-            const headerRect = headerEl.getBoundingClientRect();
-            const headerHeight = headerRect.height || 0;
-            // ensure nav is displayed inline first to get accurate height:
-            dayTabs.style.position = 'fixed'; // we want fixed behavior
-            // compute top (in viewport coordinates) so nav appears below header (visual margin)
-            const margin = (window.innerWidth <= 430) ? 12 : 10; // slightly larger margin on small phones
-            const topPx = headerHeight + margin;
-            dayTabs.style.top = topPx + 'px';
-
-            // set spacer height equal to nav's visual height so page flow reserves it
-            // measure nav height after top applied
-            const navHeight = dayTabs.offsetHeight || 56;
-            navSpacer.style.height = navHeight + 'px';
-
-            // Also ensure nav width matches app width & centered
-            const appRect = appEl.getBoundingClientRect();
-            // calculate width so nav lines up with .app (accounting for body's 20px padding)
-            const desiredWidth = Math.min(appRect.width, parseInt(getComputedStyle(document.documentElement).getPropertyValue('--maxw')) || appRect.width);
-            dayTabs.style.width = Math.max(desiredWidth - 0, appRect.width) + 'px';
-            dayTabs.style.maxWidth = appRect.width + 'px';
+        // keep a spacer equal to nav's visual height so content below never sits under it
+        function updateNavSpacer() {
+            const navH = dayTabs.offsetHeight || 56;
+            navSpacer.style.height = navH + 'px';
+            // center width / max width adjustments: ensure nav lines up visually with app
+            // We set width in CSS using calc() and max-width; fine for most cases.
         }
 
-        // scroll so content sits nicely under the nav; used when clicking a tab
-        function scrollToApp() {
+        // when clicking a tab scroll content so it is visible below the fixed navbar
+        function scrollToContent() {
             setTimeout(() => {
                 const appRect = appEl.getBoundingClientRect();
                 const appTop = window.scrollY + appRect.top;
-                const navHeight = dayTabs.offsetHeight || 56;
-                const headerHeight = headerEl ? headerEl.offsetHeight : 0;
-                // we reserved space with spacer, so align to top of spacer (appTop)
-                const scrollTo = Math.max(0, appTop - headerHeight - 8);
+                // nav sits at top of viewport and has height = navSpacer
+                const navH = dayTabs.offsetHeight || 56;
+                const scrollTo = Math.max(0, appTop - navH - 8);
                 window.scrollTo({ top: scrollTo, behavior: 'smooth' });
             }, 40);
         }
 
-        // modal helpers (iOS friendly)
+        // modal helpers (iOS friendly scroll lock)
         function showModal(el) {
             if (!el) return;
             _scrollY = window.scrollY || document.documentElement.scrollTop;
@@ -645,9 +612,9 @@
             showModal(logModal);
         }
 
-        function openHistory(exId) {
-            selectedExercise = findExerciseById(exId);
-            renderHistoryList(exId);
+        function openHistory(id) {
+            selectedExercise = findExerciseById(id);
+            renderHistoryList(id);
             setTimeout(() => { historyHolder.scrollTop = 0; }, 40);
         }
         function findExerciseById(id) {
@@ -711,39 +678,28 @@
         document.getElementById('importBtn').addEventListener('click', () => {
             const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json';
             inp.onchange = (e) => {
-                const f = e.target.files[0]; if (!f) return;
-                const reader = new FileReader(); reader.onload = () => {
-                    try {
-                        const parsed = JSON.parse(reader.result);
-                        if (parsed.data) data = parsed.data; if (parsed.logs) logs = parsed.logs;
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); localStorage.setItem(LOG_KEY, JSON.stringify(logs));
-                        alert('Imported.'); render();
-                    } catch (err) { alert('Invalid JSON'); }
+                const f = e.target.files[0]; if (!f) return; const reader = new FileReader(); reader.onload = () => {
+                    try { const parsed = JSON.parse(reader.result); if (parsed.data) data = parsed.data; if (parsed.logs) logs = parsed.logs; localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); localStorage.setItem(LOG_KEY, JSON.stringify(logs)); alert('Imported.'); render(); } catch (err) { alert('Invalid JSON'); }
                 }; reader.readAsText(f);
             };
             inp.click();
         });
 
-        document.getElementById('clearLogs').addEventListener('click', () => {
-            if (!confirm('Clear all workout logs?')) return; logs = []; localStorage.removeItem(LOG_KEY); renderHistoryList();
-        });
-        document.getElementById('addLogBtn').addEventListener('click', () => {
-            let ex = selectedExercise || data.days[currentDayIndex].exercises[0];
-            openAddLog(ex);
-        });
+        document.getElementById('clearLogs').addEventListener('click', () => { if (!confirm('Clear all workout logs?')) return; logs = []; localStorage.removeItem(LOG_KEY); renderHistoryList(); });
+        document.getElementById('addLogBtn').addEventListener('click', () => { let ex = selectedExercise || data.days[currentDayIndex].exercises[0]; openAddLog(ex); });
 
         function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
 
-        // Init
+        // init
         render();
-        // set nav placement after initial render (tabs created and height known)
-        setTimeout(updateNavPlacement, 20);
+        // set spacer after render so its height matches nav
+        setTimeout(updateNavSpacer, 20);
 
-        // Recalc on resize/orientation change (tabs may wrap -> height changes)
-        window.addEventListener('resize', () => { clearTimeout(window._navTimer); window._navTimer = setTimeout(updateNavPlacement, 100); });
-        window.addEventListener('orientationchange', () => { setTimeout(updateNavPlacement, 120); });
+        // recalc on resize/orientation (tabs can wrap -> nav height changes)
+        window.addEventListener('resize', () => { clearTimeout(window._navTimer); window._navTimer = setTimeout(() => { updateNavSpacer(); }, 120); });
+        window.addEventListener('orientationchange', () => { setTimeout(updateNavSpacer, 160); });
 
-        // Close modals with ESC
+        // close modals with ESC
         window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { hideModal(modal); hideModal(logModal); } });
     </script>
 </body>
