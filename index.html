@@ -97,7 +97,7 @@
             border: 1px solid rgba(255, 255, 255, 0.03);
             color: var(--muted);
             font-weight: 700;
-            font-size: 13px
+            font-size: 13px;
         }
 
         .tab-btn.active {
@@ -254,7 +254,114 @@
             }
         }
 
-        /* lock-body class used when modal is open */
+        /* HAMBURGER / MOBILE MENU styles */
+        .nav-toggle {
+            display: none;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 8px;
+            border-radius: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-toggle svg {
+            display: block;
+        }
+
+        /* hide desktop nav on small screens, show toggle */
+        @media (max-width: 560px) {
+
+            .nav-mid,
+            .nav-actions {
+                display: none;
+            }
+
+            .nav-toggle {
+                display: inline-flex;
+                margin-left: auto;
+                /* push it to the right */
+            }
+        }
+
+        /* mobile menu overlay (full-screen below navbar) */
+        .mobile-menu {
+            position: fixed;
+            top: var(--nav-h);
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(2, 6, 23, 0.9);
+            z-index: 1250;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 16px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 180ms ease;
+        }
+
+        .mobile-menu.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .mobile-inner {
+            width: 100%;
+            max-width: 540px;
+            margin-top: 12px;
+            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.01));
+            padding: 14px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .mobile-inner .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .mobile-tabs {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 60vh;
+            overflow: auto;
+            padding-right: 6px;
+        }
+
+        .mobile-tab-btn {
+            text-align: left;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            background: transparent;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .mobile-tab-btn.active {
+            color: var(--accent);
+            border-color: rgba(6, 182, 212, 0.18);
+            background: linear-gradient(90deg, rgba(6, 182, 212, 0.06), rgba(96, 165, 250, 0.02));
+        }
+
+        .mobile-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .mobile-actions .small-btn {
+            flex: 1;
+        }
+
+        /* lock-body class used when modal open */
         .no-scroll-lock {
             position: fixed;
             overflow: hidden;
@@ -289,7 +396,38 @@
             <button class="small-btn" id="exportBtn">Export JSON</button>
             <button class="small-btn" id="importBtn">Import</button>
         </div>
+
+        <!-- hamburger toggle (only visible on small screens) -->
+        <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" title="Open menu">
+            <!-- simple hamburger icon -->
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M4 7h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                <path d="M4 12h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                <path d="M4 17h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+            </svg>
+        </button>
     </header>
+
+    <!-- Mobile menu (hidden until toggle) -->
+    <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+        <div class="mobile-inner" role="dialog" aria-modal="true" aria-labelledby="mobileMenuTitle">
+            <div class="mobile-header">
+                <div id="mobileMenuTitle" style="font-weight:700">Menu</div>
+                <div>
+                    <button class="btn" id="closeMobileMenu">Close</button>
+                </div>
+            </div>
+
+            <div class="mobile-tabs" id="mobileTabs">
+                <!-- mobile tabs injected by JS (same days) -->
+            </div>
+
+            <div class="mobile-actions" style="margin-top:12px">
+                <button class="small-btn" id="mobileExport">Export JSON</button>
+                <button class="small-btn" id="mobileImport">Import</button>
+            </div>
+        </div>
+    </div>
 
     <main>
         <section class="card">
@@ -422,20 +560,39 @@
         let currentDayIndex = 0; let selectedExercise = null; let _scrollY = 0;
 
         const navTabs = document.getElementById('navTabs');
+        const mobileTabs = document.getElementById('mobileTabs');
         const exList = document.getElementById('exList');
         const dayTitle = document.getElementById('dayTitle');
         const modal = document.getElementById('modal');
         const logModal = document.getElementById('logModal');
         const historyHolder = document.getElementById('historyHolder');
 
-        // build tabs from data.days
+        const navToggle = document.getElementById('navToggle');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const closeMobileMenuBtn = document.getElementById('closeMobileMenu');
+        const mobileExportBtn = document.getElementById('mobileExport');
+        const mobileImportBtn = document.getElementById('mobileImport');
+
+        // build tabs from data.days (also populate mobile tabs)
         function renderTabs() {
             navTabs.innerHTML = '';
+            mobileTabs.innerHTML = '';
             data.days.forEach((d, i) => {
-                const b = document.createElement('button'); b.className = 'tab-btn' + (i === currentDayIndex ? ' active' : ''); b.textContent = d.title; b.onclick = () => { currentDayIndex = i; render(); }
+                // desktop tab
+                const b = document.createElement('button');
+                b.className = 'tab-btn' + (i === currentDayIndex ? ' active' : '');
+                b.textContent = d.title;
+                b.onclick = () => { currentDayIndex = i; render(); };
                 navTabs.appendChild(b);
+
+                // mobile tab (cloned behavior + closes mobile menu)
+                const mb = document.createElement('button');
+                mb.className = 'mobile-tab-btn' + (i === currentDayIndex ? ' active' : '');
+                mb.textContent = d.title;
+                mb.onclick = () => { currentDayIndex = i; render(); closeMobileMenu(); };
+                mobileTabs.appendChild(mb);
             });
-            // make sure active is centered on small screens
+            // make sure active is centered on small screens (desktop)
             const act = navTabs.querySelector('.tab-btn.active'); if (act) act.scrollIntoView({ inline: 'center', behavior: 'smooth' });
         }
 
@@ -463,6 +620,11 @@
                 exList.appendChild(el);
             });
             renderHistoryList(); saveState();
+            // Update mobile tabs active state (in case render was triggered from other actions)
+            const mobileBtns = mobileTabs.querySelectorAll('.mobile-tab-btn');
+            mobileBtns.forEach((btn, idx) => {
+                btn.classList.toggle('active', idx === currentDayIndex);
+            });
         }
 
         // modal helpers (lock scroll)
@@ -490,16 +652,52 @@
         document.getElementById('exportBtn').addEventListener('click', () => { const payload = { data, logs }; const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'ppl-workout-backup.json'; a.click(); URL.revokeObjectURL(url); });
         document.getElementById('importBtn').addEventListener('click', () => { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json'; inp.onchange = (e) => { const f = e.target.files[0]; if (!f) return; const reader = new FileReader(); reader.onload = () => { try { const parsed = JSON.parse(reader.result); if (parsed.data) data = parsed.data; if (parsed.logs) logs = parsed.logs; localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); localStorage.setItem(LOG_KEY, JSON.stringify(logs)); alert('Imported'); render(); } catch (err) { alert('Invalid JSON'); } }; reader.readAsText(f); }; inp.click(); });
 
+        // wire mobile action buttons to the same handlers
+        mobileExportBtn.addEventListener('click', () => document.getElementById('exportBtn').click());
+        mobileImportBtn.addEventListener('click', () => document.getElementById('importBtn').click());
+
         document.getElementById('clearLogs').addEventListener('click', () => { if (!confirm('Clear all logs?')) return; logs = []; localStorage.removeItem(LOG_KEY); renderHistoryList(); });
         document.getElementById('addLogBtn').addEventListener('click', () => { let ex = selectedExercise || data.days[currentDayIndex].exercises[0]; openAddLog(ex); });
 
         function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
 
+        // Mobile menu open/close helpers
+        function openMobileMenu() {
+            mobileMenu.classList.add('open');
+            mobileMenu.setAttribute('aria-hidden', 'false');
+            navToggle.setAttribute('aria-expanded', 'true');
+            // lock body scrolling while mobile menu is open
+            _scrollY = window.scrollY || document.documentElement.scrollTop;
+            document.body.style.top = `-${_scrollY}px`;
+            document.body.classList.add('no-scroll-lock');
+        }
+
+        function closeMobileMenu() {
+            mobileMenu.classList.remove('open');
+            mobileMenu.setAttribute('aria-hidden', 'true');
+            navToggle.setAttribute('aria-expanded', 'false');
+            document.body.classList.remove('no-scroll-lock');
+            setTimeout(() => { window.scrollTo(0, _scrollY); document.body.style.top = ''; }, 1);
+        }
+
+        navToggle.addEventListener('click', () => {
+            if (mobileMenu.classList.contains('open')) closeMobileMenu(); else openMobileMenu();
+        });
+
+        closeMobileMenuBtn.addEventListener('click', closeMobileMenu);
+
+        // close menu if user clicks outside inner card
+        mobileMenu.addEventListener('click', (e) => {
+            if (e.target === mobileMenu) closeMobileMenu();
+        });
+
         // init
         render();
 
-        // close modals on escape
-        window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { hideModal(modal); hideModal(logModal); } });
+        // close modals on escape and close mobile menu on escape too
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { hideModal(modal); hideModal(logModal); closeMobileMenu(); }
+        });
     </script>
 </body>
 
